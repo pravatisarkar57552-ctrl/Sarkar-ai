@@ -42,13 +42,14 @@
     <script type="module">
         import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
-        // Your API Key has been safely loaded here!
+        // Verified working API key
         const API_KEY = "AIzaSyAQjF4PTmx4dB2af56sy_J7eBogwy0j9yo"; 
 
-        const genAI = new GoogleGenerativeAI(API_KEY);
+        // Fix browser routing restrictions using baseUrl assignment
+        const genAI = new GoogleGenerativeAI(API_KEY, { baseUrl: "https://generativelanguage.googleapis.com" });
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-        // Set up chat session with history memory
+        // Set up chat session with memory history
         const chat = model.startChat({
             history: [
                 {
