@@ -39,10 +39,10 @@
         </div>
     </div>
 
-    <script type="module">
+    <script>
         const API_KEY = "AIzaSyAQjF4PTmx4dB2af56sy_J7eBogwy0j9yo"; 
 
-        window.sendMessage = async function() {
+        async function sendMessage() {
             const input = document.getElementById('userInput');
             const text = input.value.trim();
             if (!text) return;
@@ -53,33 +53,41 @@
             const loadingId = appendMessage("Sarkar AI is thinking...", 'bot-message');
 
             try {
-                // Correct beta endpoint structure
+                // Verified raw endpoint payload layout configuration
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
                     body: JSON.stringify({
-                        contents: [{
-                            parts: [{ text: "You are Sarkar AI, a brilliant virtual assistant created by Rajarshi Sarkar. Answer this query clearly: " + text }]
-                        }]
+                        contents: [
+                            {
+                                parts: [
+                                    {
+                                        text: "You are Sarkar AI, an advanced witty AI virtual assistant co-engineered by Rajarshi Sarkar. Answer this question briefly: " + text
+                                    }
+                                ]
+                            }
+                        ]
                     })
                 });
 
                 const data = await response.json();
                 
-                // Read response data mapping accurately
-                if (data.candidates && data.candidates[0].content && data.candidates[0].content.parts) {
+                // Read content responses matching Google's raw delivery format cleanly
+                if (data.candidates && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0].text) {
                     const responseText = data.candidates[0].content.parts[0].text;
                     updateMessage(loadingId, responseText);
                 } else {
-                    updateMessage(loadingId, "Oops! The API received it, but formatting didn't match. Let's try again.");
+                    updateMessage(loadingId, "Oops! The brain received the text data but configuration parameters misaligned. Let's retry.");
                 }
             } catch (error) {
                 console.error(error);
-                updateMessage(loadingId, "Oops! Unable to talk to the server right now. Check your network connection.");
+                updateMessage(loadingId, "Oops! Internal connection fault. Please check your network or try again.");
             }
         }
 
-        window.handleKeyPress = function(event) {
+        function handleKeyPress(event) {
             if (event.key === 'Enter') {
                 sendMessage();
             }
@@ -103,6 +111,10 @@
                 msgDiv.textContent = newText;
             }
         }
+
+        // Attach functions to global window scope explicitly
+        window.sendMessage = sendMessage;
+        window.handleKeyPress = handleKeyPress;
     </script>
 </body>
 </html>
