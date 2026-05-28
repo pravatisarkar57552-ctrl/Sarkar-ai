@@ -11,7 +11,7 @@
         .chat-header { padding: 20px; background-color: #0f172a; border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom: 1px solid #334155; text-align: center; }
         .chat-header h1 { font-size: 1.5rem; color: #38bdf8; }
         .chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-        .message { max-width: 75%; padding: 12px 16px; border-radius: 8px; line-height: 1.4; }
+        .message { max-width: 75%; padding: 12px 16px; border-radius: 8px; line-height: 1.4; white-space: pre-wrap; }
         .user-message { background-color: #0284c7; align-self: flex-end; color: white; }
         .bot-message { background-color: #334155; align-self: flex-start; color: #f1f5f9; }
         .chat-input-area { padding: 15px; background-color: #0f172a; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; display: flex; gap: 10px; border-top: 1px solid #334155; }
@@ -39,23 +39,55 @@
         </div>
     </div>
 
-    <script>
-        // JavaScript brain logic will go right here!
-        function sendMessage() {
+    <script type="module">
+        import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+
+        // Your API Key has been safely loaded here!
+        const API_KEY = "AIzaSyAQjF4PTmx4dB2af56sy_J7eBogwy0j9yo"; 
+
+        const genAI = new GoogleGenerativeAI(API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+        // Set up chat session with history memory
+        const chat = model.startChat({
+            history: [
+                {
+                    role: "user",
+                    parts: [{ text: "You are Sarkar AI, an advanced AI virtual assistant built by Rajarshi Sarkar. Be smart, helpful, witty, and amazing." }],
+                },
+                {
+                    role: "model",
+                    parts: [{ text: "Understood! I am Sarkar AI, online and ready to assist." }],
+                }
+            ],
+        });
+
+        window.sendMessage = async function() {
             const input = document.getElementById('userInput');
             const text = input.value.trim();
             if (!text) return;
 
+            // Display user message bubble
             appendMessage(text, 'user-message');
             input.value = '';
 
-            // Simulated response placeholder for now
-            setTimeout(() => {
-                appendMessage("I am processing your request. Next, we will connect my Gemini brain key!", 'bot-message');
-            }, 800);
+            // Display a temporary loading bubble while thinking
+            const loadingId = appendMessage("Sarkar AI is thinking...", 'bot-message');
+
+            try {
+                // Send chat request to Gemini API
+                const result = await chat.sendMessage(text);
+                const responseText = await result.response.text();
+                
+                // Swap out the loading text with the real AI answer
+                updateMessage(loadingId, responseText);
+            } catch (error) {
+                console.error(error);
+                updateMessage(loadingId, "Oops! I couldn't connect to my brain. Please check your network or API settings.");
+            }
         }
 
-        function handleKeyPress(event) {
+        window.handleKeyPress = function(event) {
             if (event.key === 'Enter') {
                 sendMessage();
             }
@@ -64,10 +96,20 @@
         function appendMessage(text, className) {
             const container = document.getElementById('chatMessages');
             const msgDiv = document.createElement('div');
+            const msgId = "msg-" + Date.now();
+            msgDiv.id = msgId;
             msgDiv.className = `message ${className}`;
             msgDiv.textContent = text;
             container.appendChild(msgDiv);
             container.scrollTop = container.scrollHeight;
+            return msgId;
+        }
+
+        function updateMessage(id, newText) {
+            const msgDiv = document.getElementById(id);
+            if (msgDiv) {
+                msgDiv.textContent = newText;
+            }
         }
     </script>
 </body>
