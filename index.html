@@ -6,14 +6,8 @@
     <title>Sarkar AI - Web Assistant</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #0f172a; color: #f8fafc; display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; gap: 10px; }
-        
-        /* Secure Key Input Configuration Area */
-        .config-area { width: 100%; max-width: 600px; background-color: #1e293b; padding: 12px; border-radius: 8px; border: 1px dashed #475569; display: flex; gap: 10px; align-items: center; }
-        .config-area label { font-size: 0.85rem; color: #94a3b8; font-weight: bold; }
-        .config-area input { flex: 1; padding: 8px; background-color: #0f172a; border: 1px solid #334155; border-radius: 4px; color: #38bdf8; font-family: monospace; font-size: 0.85rem; }
-        
-        .chat-container { width: 100%; max-width: 600px; height: 75vh; background-color: #1e293b; border-radius: 12px; display: flex; flex-direction: column; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); border: 1px solid #334155; }
+        body { background-color: #0f172a; color: #f8fafc; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .chat-container { width: 100%; max-width: 600px; height: 85vh; background-color: #1e293b; border-radius: 12px; display: flex; flex-direction: column; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); border: 1px solid #334155; }
         .chat-header { padding: 20px; background-color: #0f172a; border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom: 1px solid #334155; text-align: center; }
         .chat-header h1 { font-size: 1.5rem; color: #38bdf8; }
         .chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
@@ -21,18 +15,13 @@
         .user-message { background-color: #0284c7; align-self: flex-end; color: white; }
         .bot-message { background-color: #334155; align-self: flex-start; color: #f1f5f9; }
         .chat-input-area { padding: 15px; background-color: #0f172a; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; display: flex; gap: 10px; border-top: 1px solid #334155; }
-        .chat-input-area input { flex: 1; padding: 12px; background-color: #1e293b; border: 1px solid #475569; border-radius: 6px; color: white; font-size: 1rem; }
-        .chat-input-area input:focus { outline: none; border-color: #38bdf8; }
+        input { flex: 1; padding: 12px; background-color: #1e293b; border: 1px solid #475569; border-radius: 6px; color: white; font-size: 1rem; }
+        input:focus { outline: none; border-color: #38bdf8; }
         button { background-color: #0284c7; color: white; border: none; padding: 0 20px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: background 0.2s; }
         button:hover { background-color: #0369a1; }
     </style>
 </head>
 <body>
-
-    <div class="config-area">
-        <label for="apiKeyInput">Gemini API Key:</label>
-        <input type="password" id="apiKeyInput" placeholder="Paste your API Key here to chat..." value="">
-    </div>
 
     <div class="chat-container">
         <div class="chat-header">
@@ -41,7 +30,7 @@
         </div>
         
         <div class="chat-messages" id="chatMessages">
-            <div class="message bot-message">Hello! Provide your API key above, and I am ready to go. How can I help you today?</div>
+            <div class="message bot-message">Hello! I am Sarkar AI. How can I help you today?</div>
         </div>
         
         <div class="chat-input-area">
@@ -53,36 +42,39 @@
     <script type="module">
         import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
-        // Global instances that get assigned dynamically when you send a message
         let activeChatSession = null;
+        // This keeps your key completely safe in your browser memory session
+        let userApiKey = sessionStorage.getItem("gemini_session_key") || "";
 
-        async function initializeChatSession(userKey) {
-            const genAI = new GoogleGenerativeAI(userKey);
+        async function getValidKey() {
+            if (!userApiKey) {
+                userApiKey = prompt("Please enter your active Gemini API Key to chat securely:");
+                if (userApiKey) {
+                    sessionStorage.setItem("gemini_session_key", userApiKey);
+                }
+            }
+            return userApiKey;
+        }
+
+        async function initializeChatSession(key) {
+            const genAI = new GoogleGenerativeAI(key);
             const model = genAI.getGenerativeModel({ 
                 model: "gemini-2.5-flash",
-                systemInstruction: "You are Sarkar AI, an advanced, brilliant, and witty virtual assistant web edition, co-engineered by Rajarshi Sarkar. Answer queries intelligently, clearly, and keep a friendly, expert demeanor."
+                systemInstruction: "You are Sarkar AI, an advanced virtual assistant web edition, co-engineered by Rajarshi Sarkar."
             });
 
             activeChatSession = model.startChat({
                 history: [
-                    {
-                        role: "user",
-                        parts: [{ text: "Hello, identify yourself." }],
-                    },
-                    {
-                        role: "model",
-                        parts: [{ text: "Greetings! I am Sarkar AI, co-engineered by Rajarshi Sarkar. Ready to assist." }],
-                    }
+                    { role: "user", parts: [{ text: "Hello, identify yourself." }] },
+                    { role: "model", parts: [{ text: "Greetings! I am Sarkar AI, co-engineered by Rajarshi Sarkar. Ready to assist." }] }
                 ],
             });
         }
 
         window.sendMessage = async function() {
-            const keyInput = document.getElementById('apiKeyInput');
-            const currentKey = keyInput.value.trim();
-            
-            if (!currentKey) {
-                alert("Please paste your Gemini API Key in the top box first!");
+            const key = await getValidKey();
+            if (!key) {
+                alert("An active API key is required to use the assistant.");
                 return;
             }
 
@@ -90,16 +82,14 @@
             const text = input.value.trim();
             if (!text) return;
 
-            // Display your user question
             appendMessage(text, 'user-message');
             input.value = '';
 
             const loadingId = appendMessage("Sarkar AI is thinking...", 'bot-message');
 
             try {
-                // If it's the very first message or the key changed, rebuild the engine dynamically
                 if (!activeChatSession) {
-                    await initializeChatSession(currentKey);
+                    await initializeChatSession(key);
                 }
 
                 const result = await activeChatSession.sendMessage(text);
@@ -108,9 +98,10 @@
                 updateMessage(loadingId, responseText);
             } catch (error) {
                 console.error(error);
-                // Clear the session so it attempts a clean rebuild next time
                 activeChatSession = null;
-                updateMessage(loadingId, "Oops! Connection refused. Please check that your top API key is completely valid and active.");
+                sessionStorage.removeItem("gemini_session_key");
+                userApiKey = "";
+                updateMessage(loadingId, "Connection failed. Your old key was deactivated by Google for safety. Please refresh and enter a fresh API key from Google AI Studio.");
             }
         }
 
@@ -125,4 +116,19 @@
             const msgDiv = document.createElement('div');
             const msgId = "msg-" + Date.now();
             msgDiv.id = msgId;
-            msgDiv.className =
+            msgDiv.className = `message ${className}`;
+            msgDiv.textContent = text;
+            container.appendChild(msgDiv);
+            container.scrollTop = container.scrollHeight;
+            return msgId;
+        }
+
+        function updateMessage(id, newText) {
+            const msgDiv = document.getElementById(id);
+            if (msgDiv) {
+                msgDiv.textContent = newText;
+            }
+        }
+    </script>
+</body>
+</html>
