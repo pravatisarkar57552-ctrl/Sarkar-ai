@@ -42,11 +42,11 @@
     <script type="module">
         import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
-        let activeChatSession = null;
-        // This keeps your key completely safe in your browser memory session
+        let genAI = null;
+        let model = null;
         let userApiKey = sessionStorage.getItem("gemini_session_key") || "";
 
-        async function getValidKey() {
+        function getValidKey() {
             if (!userApiKey) {
                 userApiKey = prompt("Please enter your active Gemini API Key to chat securely:");
                 if (userApiKey) {
@@ -56,23 +56,8 @@
             return userApiKey;
         }
 
-        async function initializeChatSession(key) {
-            const genAI = new GoogleGenerativeAI(key);
-            const model = genAI.getGenerativeModel({ 
-                model: "gemini-2.5-flash",
-                systemInstruction: "You are Sarkar AI, an advanced virtual assistant web edition, co-engineered by Rajarshi Sarkar."
-            });
-
-            activeChatSession = model.startChat({
-                history: [
-                    { role: "user", parts: [{ text: "Hello, identify yourself." }] },
-                    { role: "model", parts: [{ text: "Greetings! I am Sarkar AI, co-engineered by Rajarshi Sarkar. Ready to assist." }] }
-                ],
-            });
-        }
-
         window.sendMessage = async function() {
-            const key = await getValidKey();
+            const key = getValidKey();
             if (!key) {
                 alert("An active API key is required to use the assistant.");
                 return;
@@ -82,26 +67,34 @@
             const text = input.value.trim();
             if (!text) return;
 
+            // Display user message
             appendMessage(text, 'user-message');
             input.value = '';
 
             const loadingId = appendMessage("Sarkar AI is thinking...", 'bot-message');
 
             try {
-                if (!activeChatSession) {
-                    await initializeChatSession(key);
+                // Initialize the model directly if it's the first message
+                if (!genAI) {
+                    genAI = new GoogleGenerativeAI(key);
+                    model = genAI.getGenerativeModel({ 
+                        model: "gemini-2.5-flash",
+                        systemInstruction: "You are Sarkar AI, an advanced virtual assistant web edition, co-engineered by Rajarshi Sarkar. Keep responses conversational and friendly."
+                    });
                 }
 
-                const result = await activeChatSession.sendMessage(text);
+                // Generate content safely without memory bugs breaking the loop
+                const result = await model.generateContent(text);
                 const responseText = await result.response.text();
                 
                 updateMessage(loadingId, responseText);
             } catch (error) {
                 console.error(error);
-                activeChatSession = null;
                 sessionStorage.removeItem("gemini_session_key");
                 userApiKey = "";
-                updateMessage(loadingId, "Connection failed. Your old key was deactivated by Google for safety. Please refresh and enter a fresh API key from Google AI Studio.");
+                genAI = null;
+                model = null;
+                updateMessage(loadingId, "Connection failed. Please refresh the page and verify your fresh API key from Google AI Studio.");
             }
         }
 
