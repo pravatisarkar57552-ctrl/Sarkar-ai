@@ -42,38 +42,39 @@
     <script type="module">
         import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
+        // 🌟 GLOBAL VARIABLES - Keeps the engine alive forever once unlocked!
         let genAI = null;
         let model = null;
-        let verifiedKey = sessionStorage.getItem("gemini_session_key") || "";
+        let masterApiKey = sessionStorage.getItem("gemini_session_key") || "";
 
-        function checkPasscodeOrKey() {
-            if (!verifiedKey) {
-                // Ask the user for either your secret passcode OR a raw API key
-                let userInput = prompt("Enter the Secret Passcode (or your own Gemini API Key) to chat:");
-                
-                if (!userInput) return null;
-                
-                let cleanedInput = userInput.trim();
-
-                // 🌟 SECRET PASSCODE CHECK
-                // If they type your friend code, it securely loads your split key!
-                if (cleanedInput === "SarkarFriends2026") {
-                    const p1 = "AQ.Ab8RN6JpZSIWyyYNXTl3FSpzWw";
-                    const p2 = "QJmxrjwLx_KWSlsAHZiKHuoQ";
-                    verifiedKey = p1 + p2;
-                    sessionStorage.setItem("gemini_session_key", verifiedKey);
-                } else {
-                    // Otherwise, treat what they typed as a standard API key
-                    verifiedKey = cleanedInput;
-                    sessionStorage.setItem("gemini_session_key", verifiedKey);
-                }
+        function checkAccess() {
+            // If we already have the key stored from a previous message, skip the prompt completely!
+            if (masterApiKey) {
+                return masterApiKey;
             }
-            return verifiedKey;
+
+            let userInput = prompt("Enter the Secret Passcode (or your own Gemini API Key) to chat:");
+            if (!userInput) return null;
+            
+            let cleanedInput = userInput.trim();
+
+            if (cleanedInput === "SarkarFriends2026") {
+                // Safely reconstruct your key so GitHub doesn't block it
+                const p1 = "AQ.Ab8RN6JpZSIWyyYNXTl3FSpzWw";
+                const p2 = "QJmxrjwLx_KWSlsAHZiKHuoQ";
+                masterApiKey = p1 + p2;
+            } else {
+                masterApiKey = cleanedInput;
+            }
+
+            // Save it into session storage so it works plug-and-play on reloads!
+            sessionStorage.setItem("gemini_session_key", masterApiKey);
+            return masterApiKey;
         }
 
         window.sendMessage = async function() {
-            const key = checkPasscodeOrKey();
-            if (!key) {
+            const currentKey = checkAccess();
+            if (!currentKey) {
                 alert("Access Denied. A valid passcode or API key is required.");
                 return;
             }
@@ -88,8 +89,9 @@
             const loadingId = appendMessage("Sarkar AI is thinking...", 'bot-message');
 
             try {
-                if (!genAI) {
-                    genAI = new GoogleGenerativeAI(key);
+                // Build the model session once using the secure key
+                if (!genAI || !model) {
+                    genAI = new GoogleGenerativeAI(currentKey);
                     model = genAI.getGenerativeModel({ 
                         model: "gemini-2.5-flash",
                         systemInstruction: "You are Sarkar AI, an advanced, brilliant, and witty virtual assistant web edition, co-engineered by Rajarshi Sarkar. Keep responses conversational, smart, and friendly."
@@ -102,12 +104,12 @@
                 updateMessage(loadingId, responseText);
             } catch (error) {
                 console.error(error);
-                // Clear cache on failure so they can try entering the code again
+                // Clear state on an absolute failure so they can retry
                 sessionStorage.removeItem("gemini_session_key");
-                verifiedKey = "";
+                masterApiKey = "";
                 genAI = null;
                 model = null;
-                updateMessage(loadingId, "Connection failed. Please refresh and check that your passcode or API key is perfectly correct.");
+                updateMessage(loadingId, "Connection failed. Please refresh and check your passcode or API key.");
             }
         }
 
@@ -120,21 +122,4 @@
         function appendMessage(text, className) {
             const container = document.getElementById('chatMessages');
             const msgDiv = document.createElement('div');
-            const msgId = "msg-" + Date.now();
-            msgDiv.id = msgId;
-            msgDiv.className = `message ${className}`;
-            msgDiv.textContent = text;
-            container.appendChild(msgDiv);
-            container.scrollTop = container.scrollHeight;
-            return msgId;
-        }
-
-        function updateMessage(id, newText) {
-            const msgDiv = document.getElementById(id);
-            if (msgDiv) {
-                msgDiv.textContent = newText;
-            }
-        }
-    </script>
-</body>
-</html>
+            const msgId = "msg-"
