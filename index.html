@@ -42,14 +42,12 @@
     <script type="module">
         import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
-        // 🌟 GLOBAL VARIABLES - Keeps the engine alive forever once unlocked!
         let genAI = null;
         let model = null;
         let masterApiKey = sessionStorage.getItem("gemini_session_key") || "";
 
         function checkAccess() {
-            // If we already have the key stored from a previous message, skip the prompt completely!
-            if (masterApiKey) {
+            if (masterApiKey && masterApiKey.length > 10) {
                 return masterApiKey;
             }
 
@@ -59,7 +57,6 @@
             let cleanedInput = userInput.trim();
 
             if (cleanedInput === "SarkarFriends2026") {
-                // Safely reconstruct your key so GitHub doesn't block it
                 const p1 = "AQ.Ab8RN6JpZSIWyyYNXTl3FSpzWw";
                 const p2 = "QJmxrjwLx_KWSlsAHZiKHuoQ";
                 masterApiKey = p1 + p2;
@@ -67,7 +64,6 @@
                 masterApiKey = cleanedInput;
             }
 
-            // Save it into session storage so it works plug-and-play on reloads!
             sessionStorage.setItem("gemini_session_key", masterApiKey);
             return masterApiKey;
         }
@@ -89,12 +85,11 @@
             const loadingId = appendMessage("Sarkar AI is thinking...", 'bot-message');
 
             try {
-                // Build the model session once using the secure key
                 if (!genAI || !model) {
                     genAI = new GoogleGenerativeAI(currentKey);
                     model = genAI.getGenerativeModel({ 
                         model: "gemini-2.5-flash",
-                        systemInstruction: "You are Sarkar AI, an advanced, brilliant, and witty virtual assistant web edition, co-engineered by Rajarshi Sarkar. Keep responses conversational, smart, and friendly."
+                        systemInstruction: "You are Sarkar AI, an advanced virtual assistant web edition, co-engineered by Rajarshi Sarkar. Keep responses conversational and friendly."
                     });
                 }
 
@@ -104,12 +99,12 @@
                 updateMessage(loadingId, responseText);
             } catch (error) {
                 console.error(error);
-                // Clear state on an absolute failure so they can retry
+                // Reset cleaner if connection drops
                 sessionStorage.removeItem("gemini_session_key");
                 masterApiKey = "";
                 genAI = null;
                 model = null;
-                updateMessage(loadingId, "Connection failed. Please refresh and check your passcode or API key.");
+                updateMessage(loadingId, "Connection failed. Please refresh the page and re-enter your passcode.");
             }
         }
 
@@ -122,4 +117,21 @@
         function appendMessage(text, className) {
             const container = document.getElementById('chatMessages');
             const msgDiv = document.createElement('div');
-            const msgId = "msg-"
+            const msgId = "msg-" + Date.now();
+            msgDiv.id = msgId;
+            msgDiv.className = `message ${className}`;
+            msgDiv.textContent = text;
+            container.appendChild(msgDiv);
+            container.scrollTop = container.scrollHeight;
+            return msgId;
+        }
+
+        function updateMessage(id, newText) {
+            const msgDiv = document.getElementById(id);
+            if (msgDiv) {
+                msgDiv.textContent = newText;
+            }
+        }
+    </script>
+</body>
+</html>
