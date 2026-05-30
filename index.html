@@ -39,26 +39,27 @@
         </div>
     </div>
 
-    <!-- Import Google Gen AI SDK directly inside the browser -->
+    <!-- Import the Google Gen AI SDK for browsers via CDN -->
     <script type="module">
         import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
-        // 🔑 REMOVE THE WORDS BELOW AND PASTE YOUR ACTUAL GOOGLE AI STUDIO API KEY INSIDE THESE QUOTES:
+        // 🔥 PASTE YOUR GOOGLE AI STUDIO API KEY INSIDE THE QUOTES BELOW:
         const API_KEY = "YOUR_GEMINI_API_KEY_HERE"; 
 
         const genAI = new GoogleGenerativeAI(API_KEY);
+        // Using gemini-2.5-flash as the fast workhorse model
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-        // Set up chat session with memory history
+        // Initialize a chat session with history memory!
         const chat = model.startChat({
             history: [
                 {
                     role: "user",
-                    parts: [{ text: "You are Sarkar AI, an advanced AI virtual assistant built by Rajarshi Sarkar. Be smart, helpful, witty, and amazing." }],
+                    parts: [{ text: "You are Sarkar AI, an advanced virtual assistant built by Rajarshi Sarkar. Be helpful, smart, and friendly." }],
                 },
                 {
                     role: "model",
-                    parts: [{ text: "Understood! I am Sarkar AI, online and ready to assist." }],
+                    parts: [{ text: "Understood! I am ready to act as Sarkar AI." }],
                 }
             ],
         });
@@ -68,23 +69,23 @@
             const text = input.value.trim();
             if (!text) return;
 
-            // Display user message bubble
+            // Show User Message
             appendMessage(text, 'user-message');
             input.value = '';
 
-            // Display a temporary loading bubble while thinking
+            // Create a typing loading indicator
             const loadingId = appendMessage("Sarkar AI is thinking...", 'bot-message');
 
             try {
-                // Send chat request to Gemini API
+                // Send the message directly through the live API session
                 const result = await chat.sendMessage(text);
                 const responseText = await result.response.text();
                 
-                // Swap out the loading text with the real AI answer
+                // Replace the loading message with the real answer
                 updateMessage(loadingId, responseText);
             } catch (error) {
                 console.error(error);
-                updateMessage(loadingId, "Oops! I couldn't connect to my brain. Please make sure your API key inside line 52 is valid!");
+                updateMessage(loadingId, "Oops! I ran into an connection issue. Please verify that your API key is correctly inserted.");
             }
         }
 
